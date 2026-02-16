@@ -14,12 +14,15 @@ Generate lyric videos with timed text animations from a JSON lyrics file and an 
 git clone https://github.com/CuWilliams/lyric-video-generator.git
 cd lyric-video-generator
 
-# Install dependencies
-pip install -r requirements.txt
+# Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
 
-# Or install as a package (makes the lyric-video command available)
+# Install as an editable package (installs deps + registers the lyric-video command)
 pip install -e .
 ```
+
+> **Note:** On macOS, use `pip3` instead of `pip` if you are not in a virtual environment.
 
 ### FFmpeg
 
@@ -54,7 +57,7 @@ lyric-video --lyrics examples/sample_lyrics.json \
 ### Examples
 
 ```bash
-# Quick preview with default settings
+# Quick preview with default settings (first 30 seconds)
 lyric-video --lyrics examples/sample_lyrics.json --audio song.mp3 --preview
 
 # Full video with slide animation
@@ -63,13 +66,23 @@ lyric-video --lyrics examples/sample_lyrics.json --audio song.mp3 --animation sl
 # Custom output path and theme
 lyric-video --lyrics my_lyrics.json --audio my_song.wav \
             --theme my_theme.json --output my_video.mp4
+
+# Audio path with spaces (use quotes)
+lyric-video --lyrics examples/sample_lyrics.json \
+            --audio "/path/to/My Song.mp3"
 ```
 
-You can also run the CLI directly without installing:
+You can also run the CLI directly without installing the package:
 
 ```bash
 python -m src.cli.main --lyrics examples/sample_lyrics.json --audio song.mp3
 ```
+
+### Notes
+
+- The `--preview` flag is useful for quickly testing your lyrics/theme before generating a full-length video.
+- Generated videos are saved to the `output/` directory by default. This directory is gitignored.
+- If lyrics start after 0:00 (e.g. an instrumental intro), the video will show a blank background until the first lyric line.
 
 ## Lyrics Format
 
