@@ -13,14 +13,17 @@ Python CLI tool that generates YouTube-ready 1080p lyric videos from a JSON lyri
 python3 -m venv venv && source venv/bin/activate
 pip install -e .
 
-# Run via CLI entry point
-lyric-video --lyrics examples/sample_lyrics.json --audio song.mp3
+# Run via CLI entry point (auto-match from input/ folders)
+lyric-video --song disciples-of-dysfunction
+
+# Run with explicit paths
+lyric-video --lyrics input/lyrics/disciples-of-dysfunction.json --audio input/audio/disciples-of-dysfunction.mp3
 
 # Run directly
-python -m src.cli.main --lyrics examples/sample_lyrics.json --audio song.mp3
+python -m src.cli.main --song disciples-of-dysfunction
 
 # CLI options
-lyric-video --lyrics FILE --audio FILE [--theme FILE] [--animation fade|slide|typewriter] [--output PATH] [--fps 30] [--preview]
+lyric-video --song NAME | --lyrics FILE --audio FILE [--background FILE] [--no-background] [--theme FILE] [--animation fade|slide|typewriter] [--output PATH] [--fps 30] [--preview]
 ```
 
 FFmpeg must be installed on the system (required by moviepy).
@@ -37,13 +40,14 @@ No test suite or linting is currently configured.
 - `text_renderer.py` — PIL-based rendering at 1920x1080. Handles font loading (with fallback chain), hex colors, shadows, text alpha blending.
 - `audio_handler.py` — Loads audio via moviepy `AudioFileClip`.
 - `theme_loader.py` — Loads theme JSON merged with hardcoded defaults.
+- `song_resolver.py` — Auto-matches song files from `input/` directories by name. Resolves lyrics, audio, and background paths.
 
 **Animation system** (`src/animations/`):
 - `base.py` — Abstract `BaseAnimation` with `generate_frames(text, duration, fps, renderer) -> list[PIL.Image]`.
 - Three implementations: `fade.py`, `slide.py`, `typewriter.py`. Each controls how a single lyric line animates over its duration.
 
 **Data formats:**
-- Lyrics: JSON with `title`, `artist`, `lyrics[]` (each entry has `time` in seconds and `text`).
+- Lyrics: JSON with `title`, `artist`, `lyrics[]` (each entry has `time` in seconds and `text`). See `input/lyrics/disciples-of-dysfunction.json`.
 - Themes: JSON with 9 properties (colors, fonts, shadows, animation settings). See `themes/durt_nurs.json`.
 
 ## Key Conventions
@@ -51,4 +55,5 @@ No test suite or linting is currently configured.
 - moviepy v2.0+ API: use `with_fps()`, `with_audio()`, `VideoClip(frame_function)` — not the deprecated v1 methods.
 - Python 3.10+ required. Dependencies: moviepy, Pillow, click, numpy.
 - Preview mode renders first 30 seconds only.
+- Input directories are `input/audio/`, `input/lyrics/`, `input/backgrounds/` (contents gitignored, structure kept via `.gitkeep`).
 - Output directory is `output/` (gitignored).

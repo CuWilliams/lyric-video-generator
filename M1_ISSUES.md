@@ -31,8 +31,9 @@ lyric-video-generator/
 │       └── main.py               # CLI entry point
 ├── themes/
 │   └── durt_nurs.json            # default Durt Nurs theme (colors, fonts)
-├── examples/
-│   └── sample_lyrics.json        # sample lyrics file (Disciples of Dysfunction)
+├── input/
+│   └── lyrics/
+│       └── disciples-of-dysfunction.json  # sample lyrics file
 ├── output/                       # generated videos go here (gitignored)
 ├── requirements.txt              # moviepy, Pillow, click
 ├── README.md
@@ -42,7 +43,7 @@ lyric-video-generator/
 
 Dependencies: `moviepy`, `Pillow`, `click` (for CLI), `numpy`
 
-Include the sample lyrics JSON from `examples/sample_lyrics.json`.
+Include the sample lyrics JSON (now at `input/lyrics/disciples-of-dysfunction.json`).
 
 ---
 
@@ -147,7 +148,7 @@ Requirements:
 Create a CLI using `click`:
 
 ```bash
-lyric-video --lyrics examples/sample_lyrics.json \
+lyric-video --lyrics input/lyrics/disciples-of-dysfunction.json \
             --audio path/to/song.mp3 \
             --theme themes/durt_nurs.json \
             --animation fade \

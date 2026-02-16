@@ -33,7 +33,7 @@ lyric-video-generator/
 **Gitignore:**
 - Gitignore contents of `input/audio/`, `input/lyrics/`, `input/backgrounds/`, and `output/`
 - Keep the folder structure via `.gitkeep` files
-- Move the existing `examples/sample_lyrics.json` into `examples/` (keep as reference, separate from working input)
+- Sample lyrics moved to `input/lyrics/disciples-of-dysfunction.json`; `examples/` directory removed
 
 **Updated CLI usage:**
 ```bash

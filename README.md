@@ -34,9 +34,22 @@ moviepy requires FFmpeg to be installed on your system:
 
 ## Usage
 
+Place your files in the `input/` folders:
+- `input/audio/` — MP3/WAV song files
+- `input/lyrics/` — lyrics JSON files
+- `input/backgrounds/` — looping MP4 background videos (optional)
+
+Then run with `--song` to auto-match by filename:
+
 ```bash
-lyric-video --lyrics examples/sample_lyrics.json \
-            --audio path/to/song.mp3 \
+lyric-video --song disciples-of-dysfunction
+```
+
+Or use explicit paths:
+
+```bash
+lyric-video --lyrics input/lyrics/disciples-of-dysfunction.json \
+            --audio input/audio/disciples-of-dysfunction.mp3 \
             --theme themes/durt_nurs.json \
             --animation fade \
             --output output/video.mp4
@@ -46,36 +59,44 @@ lyric-video --lyrics examples/sample_lyrics.json \
 
 | Option | Required | Default | Description |
 |--------|----------|---------|-------------|
-| `--lyrics` | Yes | — | Path to lyrics JSON file |
-| `--audio` | Yes | — | Path to audio file (mp3, wav, etc.) |
+| `--song` | * | — | Song name to auto-match from `input/` folders |
+| `--lyrics` | * | — | Path to lyrics JSON file |
+| `--audio` | * | — | Path to audio file (mp3, wav, etc.) |
+| `--background` | No | auto-matched | Path to background video |
+| `--no-background` | No | off | Force solid color background |
 | `--theme` | No | `themes/durt_nurs.json` | Path to theme JSON |
 | `--animation` | No | `fade` | Animation style: `fade`, `slide`, or `typewriter` |
 | `--output` | No | `output/<title>.mp4` | Output file path |
 | `--fps` | No | `30` | Frame rate |
 | `--preview` | No | off | Generate only first 30 seconds |
 
+\* Provide either `--song` or both `--lyrics` and `--audio`.
+
 ### Examples
 
 ```bash
-# Quick preview with default settings (first 30 seconds)
-lyric-video --lyrics examples/sample_lyrics.json --audio song.mp3 --preview
+# Auto-match mode (looks in input/ folders)
+lyric-video --song disciples-of-dysfunction
 
-# Full video with slide animation
-lyric-video --lyrics examples/sample_lyrics.json --audio song.mp3 --animation slide
+# Quick preview with auto-match (first 30 seconds)
+lyric-video --song disciples-of-dysfunction --preview
+
+# Explicit paths
+lyric-video --lyrics input/lyrics/disciples-of-dysfunction.json \
+            --audio input/audio/disciples-of-dysfunction.mp3
 
 # Custom output path and theme
 lyric-video --lyrics my_lyrics.json --audio my_song.wav \
             --theme my_theme.json --output my_video.mp4
 
-# Audio path with spaces (use quotes)
-lyric-video --lyrics examples/sample_lyrics.json \
-            --audio "/path/to/My Song.mp3"
+# Override background for a song
+lyric-video --song disciples-of-dysfunction --background /path/to/custom_bg.mp4
 ```
 
 You can also run the CLI directly without installing the package:
 
 ```bash
-python -m src.cli.main --lyrics examples/sample_lyrics.json --audio song.mp3
+python -m src.cli.main --song disciples-of-dysfunction
 ```
 
 ### Notes
@@ -102,7 +123,7 @@ python -m src.cli.main --lyrics examples/sample_lyrics.json --audio song.mp3
 - `text` — the lyric text to display
 - An empty `text` field marks the end of lyrics (used for timing the final line)
 
-See `examples/sample_lyrics.json` for a complete example.
+See `input/lyrics/disciples-of-dysfunction.json` for a complete example.
 
 ## Animations
 
@@ -151,7 +172,8 @@ lyric-video-generator/
 │   │   ├── text_renderer.py      # text/font rendering with Pillow
 │   │   ├── video_generator.py    # main video generation pipeline
 │   │   ├── audio_handler.py      # audio file loading
-│   │   └── theme_loader.py       # theme JSON loading with defaults
+│   │   ├── theme_loader.py       # theme JSON loading with defaults
+│   │   └── song_resolver.py      # auto-match song files from input/
 │   ├── animations/
 │   │   ├── base.py               # base animation class
 │   │   ├── fade.py               # fade in/out
@@ -159,10 +181,12 @@ lyric-video-generator/
 │   │   └── typewriter.py         # typewriter effect
 │   └── cli/
 │       └── main.py               # CLI entry point
+├── input/
+│   ├── audio/                    # MP3/WAV song files (gitignored)
+│   ├── lyrics/                   # lyrics JSON files (gitignored)
+│   └── backgrounds/              # looping MP4 backgrounds (gitignored)
 ├── themes/
 │   └── durt_nurs.json            # default theme
-├── examples/
-│   └── sample_lyrics.json        # sample lyrics
 ├── output/                       # generated videos (gitignored)
 ├── requirements.txt
 └── pyproject.toml
