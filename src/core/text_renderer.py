@@ -31,12 +31,13 @@ class TextRenderer:
                     continue
             return ImageFont.load_default()
 
-    def render_frame(self, text: str, alpha: float = 1.0) -> Image.Image:
+    def render_frame(self, text: str, alpha: float = 1.0, y_offset: int = 0) -> Image.Image:
         """Render a single frame with the given text.
 
         Args:
             text: The lyric text to render.
             alpha: Opacity of the text (0.0 to 1.0), used by animations.
+            y_offset: Vertical pixel offset from the base position (for slide animations).
 
         Returns:
             A 1920x1080 RGBA PIL Image.
@@ -61,6 +62,7 @@ class TextRenderer:
 
         # Position
         x, y = self._compute_position(text_w, text_h)
+        y += y_offset
 
         # Convert alpha to 0-255
         a = int(alpha * 255)
