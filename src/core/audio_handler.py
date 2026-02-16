@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from moviepy.editor import AudioFileClip
+from moviepy import AudioFileClip
 
 
 def load_audio(filepath: str | Path) -> AudioFileClip:

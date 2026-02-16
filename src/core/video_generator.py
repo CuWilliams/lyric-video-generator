@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from moviepy.editor import AudioFileClip, VideoClip
+from moviepy import AudioFileClip, VideoClip
 
 from src.animations.base import BaseAnimation
 from src.animations.fade import FadeAnimation
@@ -12,7 +12,7 @@ from src.animations.slide import SlideAnimation
 from src.animations.typewriter import TypewriterAnimation
 from src.core.audio_handler import load_audio
 from src.core.lyrics_parser import LyricLine, parse_lyrics
-from src.core.text_renderer import TextRenderer
+from src.core.text_renderer import TextRenderer, WIDTH, HEIGHT
 from src.core.theme_loader import load_theme
 
 ANIMATIONS = {
@@ -70,28 +70,32 @@ def generate_video(
     line_frames = _prerender_lines(lines, animation, fps, renderer, total_duration)
 
     # Build a blank background frame (as numpy array) for gaps
-    blank_frame = np.array(renderer.render_frame("").convert("RGB"))
+    blank_frame = np.array(renderer.render_frame("").convert("RGB"), dtype=np.uint8)
 
-    # Create frame lookup: for each line, store (start_time, end_time, frames)
+    # Create frame lookup: for each line, store (start_time, end_time, numpy frames)
     frame_lookup = []
-    for line, frames in zip(lines, line_frames):
+    for line, pil_frames in zip(lines, line_frames):
         end_time = min(line.end_time, total_duration) if preview else line.end_time
-        frame_lookup.append((line.start_time, end_time, frames))
+        np_frames = [np.array(f.convert("RGB"), dtype=np.uint8) for f in pil_frames]
+        frame_lookup.append((line.start_time, end_time, np_frames))
 
     def make_frame(t: float) -> np.ndarray:
         """Return the video frame at time t."""
         for start, end, frames in frame_lookup:
-            if start <= t < end:
+            if start <= t < end and len(frames) > 0:
                 # Map t to a frame index within this line's frames
                 progress = (t - start) / (end - start)
                 idx = min(int(progress * len(frames)), len(frames) - 1)
-                return np.array(frames[idx].convert("RGB"))
+                return frames[idx]
         return blank_frame
 
     # Build video clip
-    video = VideoClip(make_frame, duration=total_duration)
-    video = video.set_fps(fps)
-    video = video.set_audio(audio.subclip(0, total_duration))
+    video = VideoClip(
+        frame_function=make_frame,
+        duration=total_duration,
+    )
+    video = video.with_fps(fps)
+    video = video.with_audio(audio.subclipped(0, total_duration))
 
     # Ensure output directory exists
     output_path = Path(output_path)
