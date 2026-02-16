@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "lyric-video-generator"
+version = "0.1.0"
+description = "Generate lyric videos with timed text animations"
+requires-python = ">=3.10"
+dependencies = [
+    "moviepy>=1.0.3",
+    "Pillow>=10.0.0",
+    "click>=8.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.scripts]
+lyric-video = "src.cli.main:cli"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
