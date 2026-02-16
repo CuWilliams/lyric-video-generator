@@ -17,9 +17,13 @@ env/
 .idea/
 
 # Output
-output/*.mp4
-output/*.avi
-output/*.mov
+output/
+
+# Input feedstock (keep folder structure via .gitkeep)
+input/audio/*
+input/lyrics/*
+input/backgrounds/*
+!input/**/.gitkeep
 
 # OS
 .DS_Store

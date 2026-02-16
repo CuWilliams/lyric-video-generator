@@ -32,6 +32,7 @@ def generate_video(
     animation_name: str = "fade",
     fps: int = FPS_DEFAULT,
     preview: bool = False,
+    background_path: str | Path | None = None,
 ) -> Path:
     """Generate a lyric video from lyrics JSON and an audio file.
 
@@ -43,6 +44,7 @@ def generate_video(
         animation_name: One of 'fade', 'slide', 'typewriter'.
         fps: Frames per second (default 30).
         preview: If True, only generate the first 30 seconds.
+        background_path: Path to background video (None for solid color).
 
     Returns:
         The output file path.
