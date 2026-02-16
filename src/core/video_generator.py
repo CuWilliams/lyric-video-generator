@@ -63,30 +63,41 @@ def generate_video(
         total_duration = min(total_duration, 30.0)
         lines = [l for l in lines if l.start_time < total_duration]
 
-    # Pre-render all frames for each lyric line
     print(f"Generating video: {lyrics_data['title']} by {lyrics_data['artist']}")
     print(f"Animation: {animation_name} | FPS: {fps} | Duration: {total_duration:.1f}s")
+    print(f"Lyric lines: {len(lines)}")
 
-    line_frames = _prerender_lines(lines, animation, fps, renderer, total_duration)
+    # Build line timing lookup (no pre-rendering — frames generated on demand)
+    line_lookup = []
+    for line in lines:
+        end_time = min(line.end_time, total_duration) if preview else line.end_time
+        duration = end_time - line.start_time
+        if duration > 0:
+            line_lookup.append((line.start_time, end_time, duration, line.text))
 
-    # Build a blank background frame (as numpy array) for gaps
+    # Blank background frame for instrumental gaps
     blank_frame = np.array(renderer.render_frame("").convert("RGB"), dtype=np.uint8)
 
-    # Create frame lookup: for each line, store (start_time, end_time, numpy frames)
-    frame_lookup = []
-    for line, pil_frames in zip(lines, line_frames):
-        end_time = min(line.end_time, total_duration) if preview else line.end_time
-        np_frames = [np.array(f.convert("RGB"), dtype=np.uint8) for f in pil_frames]
-        frame_lookup.append((line.start_time, end_time, np_frames))
+    # Cache: store frames for the current line only to avoid re-rendering
+    cache = {"line_idx": -1, "frames": []}
 
     def make_frame(t: float) -> np.ndarray:
-        """Return the video frame at time t."""
-        for start, end, frames in frame_lookup:
-            if start <= t < end and len(frames) > 0:
-                # Map t to a frame index within this line's frames
-                progress = (t - start) / (end - start)
-                idx = min(int(progress * len(frames)), len(frames) - 1)
-                return frames[idx]
+        """Render the video frame at time t on demand."""
+        for i, (start, end, duration, text) in enumerate(line_lookup):
+            if start <= t < end:
+                # Render this line's frames on first access, cache for reuse
+                if cache["line_idx"] != i:
+                    pil_frames = animation.generate_frames(text, duration, fps, renderer)
+                    cache["frames"] = [
+                        np.array(f.convert("RGB"), dtype=np.uint8) for f in pil_frames
+                    ]
+                    cache["line_idx"] = i
+
+                frames = cache["frames"]
+                if len(frames) > 0:
+                    progress = (t - start) / (end - start)
+                    idx = min(int(progress * len(frames)), len(frames) - 1)
+                    return frames[idx]
         return blank_frame
 
     # Build video clip
@@ -113,31 +124,3 @@ def generate_video(
 
     print(f"Done! Video saved to {output_path}")
     return output_path
-
-
-def _prerender_lines(
-    lines: list[LyricLine],
-    animation: BaseAnimation,
-    fps: int,
-    renderer: TextRenderer,
-    total_duration: float,
-) -> list[list]:
-    """Pre-render animated frames for each lyric line with progress output."""
-    total_lines = len(lines)
-    all_frames = []
-
-    for i, line in enumerate(lines):
-        duration = min(line.duration, total_duration - line.start_time)
-        if duration <= 0:
-            all_frames.append([])
-            continue
-
-        frames = animation.generate_frames(line.text, duration, fps, renderer)
-        all_frames.append(frames)
-
-        pct = int((i + 1) / total_lines * 100)
-        sys.stdout.write(f"\rPre-rendering lines: {pct}% ({i + 1}/{total_lines})")
-        sys.stdout.flush()
-
-    print()  # newline after progress
-    return all_frames
