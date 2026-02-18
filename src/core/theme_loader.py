@@ -18,6 +18,8 @@ DEFAULTS = {
     "line_height": 120,
     "glow_enabled": True,
     "inactive_alphas": [0.6, 0.4, 0.2],
+    "highlight_mode": "line",
+    "highlight_dim_alpha": 0.3,
 }
 
 
@@ -30,13 +32,15 @@ class Theme:
     font_family: str
     font_size: int
     text_position: str
-    lyric_position: str = "center"
     text_shadow: bool
     text_shadow_color: str
+    lyric_position: str = "center"
     text_shadow_offset: list[int] = field(default_factory=lambda: [3, 3])
     line_height: int = 120
     glow_enabled: bool = True
     inactive_alphas: list[float] = field(default_factory=lambda: [0.6, 0.4, 0.2])
+    highlight_mode: str = "line"
+    highlight_dim_alpha: float = 0.3
 
 
 def load_theme(filepath: str | Path | None = None) -> Theme:
@@ -73,4 +77,6 @@ def load_theme(filepath: str | Path | None = None) -> Theme:
         line_height=merged["line_height"],
         glow_enabled=merged["glow_enabled"],
         inactive_alphas=merged["inactive_alphas"],
+        highlight_mode=merged["highlight_mode"],
+        highlight_dim_alpha=merged["highlight_dim_alpha"],
     )

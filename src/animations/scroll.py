@@ -125,12 +125,23 @@ class ScrollingAnimation:
 
     def make_frame(self, t: float, renderer) -> np.ndarray:
         """Return a HxWx3 uint8 numpy array for time t."""
+        active_idx = self._find_active_idx(t)
+
+        # Compute how far through the active line we are (0.0 – 1.0).
+        highlight_progress = 0.0
+        if active_idx >= 0:
+            active_line = self.lines[active_idx]
+            if active_line.duration > 0:
+                raw = (t - active_line.start_time) / active_line.duration
+                highlight_progress = max(0.0, min(1.0, raw))
+
         lines_data = [
             {
                 "text": li.text,
                 "screen_y": li.screen_y,
                 "alpha": li.alpha,
                 "is_active": li.is_active,
+                "highlight_progress": highlight_progress if li.is_active else 0.0,
             }
             for li in self.get_visible_lines(t)
         ]

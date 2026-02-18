@@ -95,6 +95,7 @@ class TextRenderer:
                 - 'screen_y': float  (center y position on screen)
                 - 'alpha': float     (0.0 – 1.0)
                 - 'is_active': bool
+                - 'highlight_progress': float  (0.0 – 1.0, for word/char modes)
 
         Returns:
             A 1920x1080 RGBA PIL Image.
@@ -102,6 +103,7 @@ class TextRenderer:
         img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
 
         x, anchor, align, max_chars = self._get_horizontal_layout()
+        highlight_mode = getattr(self.theme, "highlight_mode", "line")
 
         for line_data in lines_data:
             text = line_data.get("text", "")
@@ -111,6 +113,7 @@ class TextRenderer:
             screen_y = line_data["screen_y"]
             alpha = line_data["alpha"]
             is_active = line_data.get("is_active", False)
+            highlight_progress = line_data.get("highlight_progress", 0.0)
 
             wrapped = self._wrap_text(text, max_chars)
             a = int(alpha * 255)
@@ -138,16 +141,122 @@ class TextRenderer:
                     fill=shadow_color, anchor=anchor, align=align,
                 )
 
-            # Main text
-            text_color = self._hex_to_rgba(self.theme.text_color, a)
-            draw.multiline_text(
-                (x, y), wrapped, font=self.font,
-                fill=text_color, anchor=anchor, align=align,
-            )
+            # Main text — use token-level highlighting for active line in word/char mode
+            if is_active and highlight_mode in ("word", "character"):
+                self._render_highlighted_tokens(
+                    draw, wrapped, y, alpha, highlight_progress, highlight_mode,
+                )
+            else:
+                text_color = self._hex_to_rgba(self.theme.text_color, a)
+                draw.multiline_text(
+                    (x, y), wrapped, font=self.font,
+                    fill=text_color, anchor=anchor, align=align,
+                )
 
             img = Image.alpha_composite(img, txt_layer)
 
         return img
+
+    def _render_highlighted_tokens(
+        self,
+        draw: ImageDraw.ImageDraw,
+        wrapped_text: str,
+        y: int,
+        alpha: float,
+        progress: float,
+        mode: str,
+    ) -> None:
+        """Render text with progressive word- or character-level highlighting.
+
+        Tokens up to ``progress * total_tokens`` are drawn at full alpha;
+        the remaining tokens are drawn at ``highlight_dim_alpha`` opacity.
+
+        Args:
+            draw: PIL ImageDraw instance for the current text layer.
+            wrapped_text: Line text, possibly containing \\n (from _wrap_text).
+            y: Vertical center of the full text block in pixels.
+            alpha: Overall line opacity (0.0 – 1.0).
+            progress: Fraction of the line's duration elapsed (0.0 – 1.0).
+            mode: ``"word"`` or ``"character"``.
+        """
+        display_lines = wrapped_text.split("\n")
+        n_lines = len(display_lines)
+        pos = getattr(self.theme, "lyric_position", "center")
+
+        a_full = int(alpha * 255)
+        dim_frac = getattr(self.theme, "highlight_dim_alpha", 0.3)
+        a_dim = int(alpha * dim_frac * 255)
+        color_full = self._hex_to_rgba(self.theme.text_color, a_full)
+        color_dim = self._hex_to_rgba(self.theme.text_color, a_dim)
+
+        # Count all tokens across every display line to set the threshold.
+        total_tokens = 0
+        for dl in display_lines:
+            total_tokens += len(dl.split()) if mode == "word" else len(dl)
+        if total_tokens == 0:
+            return
+        threshold = progress * total_tokens  # tokens with index < threshold are lit
+
+        # Font metrics for vertical positioning of individual wrapped lines.
+        try:
+            ascent, descent = self.font.getmetrics()
+        except AttributeError:
+            ascent = self.theme.font_size
+            descent = int(self.theme.font_size * 0.2)
+        char_height = ascent + descent
+        spacing = 4  # PIL default line spacing
+        line_h = char_height + spacing
+        # With anchor="mm" the block is centered at y.
+        # Block top = y - total_block_height / 2
+        total_block_height = n_lines * char_height + max(0, n_lines - 1) * spacing
+        block_top = y - total_block_height / 2.0
+
+        token_idx = 0
+        for i, display_line in enumerate(display_lines):
+            if not display_line:
+                continue
+
+            # Vertical center of this display line.
+            line_center_y = block_top + char_height / 2.0 + i * line_h
+
+            # Build token strings for this line.
+            if mode == "word":
+                words = display_line.split()
+                token_strs = [
+                    w + (" " if j < len(words) - 1 else "")
+                    for j, w in enumerate(words)
+                ]
+            else:  # character
+                token_strs = list(display_line)
+
+            # Starting x: replicate the alignment logic using per-line width.
+            try:
+                line_width = self.font.getlength(display_line)
+            except AttributeError:
+                line_width, _ = self.font.getsize(display_line)  # type: ignore[attr-defined]
+
+            if pos == "left":
+                x_cursor = float(COLUMN_PADDING)
+            elif pos == "right":
+                x_cursor = float(WIDTH - COLUMN_PADDING - line_width)
+            else:  # center
+                x_cursor = WIDTH / 2.0 - line_width / 2.0
+
+            for token_str in token_strs:
+                color = color_full if token_idx < threshold else color_dim
+                draw.text(
+                    (x_cursor, line_center_y),
+                    token_str,
+                    font=self.font,
+                    fill=color,
+                    anchor="lm",
+                )
+                try:
+                    token_width = self.font.getlength(token_str)
+                except AttributeError:
+                    token_width, _ = self.font.getsize(token_str)  # type: ignore[attr-defined]
+                x_cursor += token_width
+                token_idx += 1
 
     def _get_horizontal_layout(self) -> tuple[int, str, str, int]:
         """Return (x, anchor, align, max_chars) based on theme lyric_position."""

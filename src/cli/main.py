@@ -26,7 +26,13 @@ DEFAULT_THEME = Path(__file__).resolve().parent.parent.parent / "themes" / "durt
     default=None,
     help="Horizontal lyric position: left, center, or right (overrides theme).",
 )
-def cli(song, lyrics, audio, background, no_background, theme, output, fps, preview, lyric_position):
+@click.option(
+    "--highlight-mode",
+    type=click.Choice(["line", "word", "character"]),
+    default=None,
+    help="Word/character highlighting mode: line (default), word, or character (overrides theme).",
+)
+def cli(song, lyrics, audio, background, no_background, theme, output, fps, preview, lyric_position, highlight_mode):
     """Generate a lyric video from a lyrics JSON file and an audio track."""
     # Resolve input paths
     if song:
@@ -72,6 +78,7 @@ def cli(song, lyrics, audio, background, no_background, theme, output, fps, prev
         preview=preview,
         background_path=background_path,
         lyric_position=lyric_position,
+        highlight_mode=highlight_mode,
     )
 
 

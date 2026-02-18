@@ -10,5 +10,7 @@
   "text_shadow_offset": [3, 3],
   "line_height": 120,
   "glow_enabled": true,
-  "inactive_alphas": [0.6, 0.4, 0.2]
+  "inactive_alphas": [0.6, 0.4, 0.2],
+  "highlight_mode": "line",
+  "highlight_dim_alpha": 0.3
 }
