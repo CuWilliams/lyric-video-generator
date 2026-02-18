@@ -20,6 +20,8 @@ DEFAULTS = {
     "inactive_alphas": [0.6, 0.4, 0.2],
     "highlight_mode": "line",
     "highlight_dim_alpha": 0.3,
+    "text_overlay_opacity": 0,
+    "text_overlay_color": "#000000",
 }
 
 
@@ -41,6 +43,8 @@ class Theme:
     inactive_alphas: list[float] = field(default_factory=lambda: [0.6, 0.4, 0.2])
     highlight_mode: str = "line"
     highlight_dim_alpha: float = 0.3
+    text_overlay_opacity: int = 0
+    text_overlay_color: str = "#000000"
 
 
 def load_theme(filepath: str | Path | None = None) -> Theme:
@@ -79,4 +83,6 @@ def load_theme(filepath: str | Path | None = None) -> Theme:
         inactive_alphas=merged["inactive_alphas"],
         highlight_mode=merged["highlight_mode"],
         highlight_dim_alpha=merged["highlight_dim_alpha"],
+        text_overlay_opacity=merged["text_overlay_opacity"],
+        text_overlay_color=merged["text_overlay_color"],
     )

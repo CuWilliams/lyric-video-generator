@@ -107,6 +107,27 @@ class TextRenderer:
         else:
             img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
 
+        # Draw semi-transparent overlay strip between background and lyrics
+        overlay_opacity = getattr(self.theme, "text_overlay_opacity", 0)
+        if overlay_opacity > 0:
+            overlay_alpha = int(overlay_opacity / 100 * 255)
+            pos = getattr(self.theme, "lyric_position", "center")
+            col_w = WIDTH // 3
+            if pos == "left":
+                ox = 0
+            elif pos == "right":
+                ox = WIDTH - col_w
+            else:  # center
+                ox = col_w
+            overlay_color = self._hex_to_rgba(
+                getattr(self.theme, "text_overlay_color", "#000000"), overlay_alpha
+            )
+            overlay_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
+            ImageDraw.Draw(overlay_layer).rectangle(
+                [ox, 0, ox + col_w - 1, HEIGHT - 1], fill=overlay_color
+            )
+            img = Image.alpha_composite(img, overlay_layer)
+
         x, anchor, align, max_chars = self._get_horizontal_layout()
         highlight_mode = getattr(self.theme, "highlight_mode", "line")
 
