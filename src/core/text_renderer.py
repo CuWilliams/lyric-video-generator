@@ -86,7 +86,7 @@ class TextRenderer:
 
         return Image.alpha_composite(img, txt_layer)
 
-    def render_scroll_frame(self, lines_data: list[dict]) -> Image.Image:
+    def render_scroll_frame(self, lines_data: list[dict], background: Image.Image | None = None) -> Image.Image:
         """Render multiple lyric lines for the scrolling view.
 
         Args:
@@ -96,11 +96,16 @@ class TextRenderer:
                 - 'alpha': float     (0.0 – 1.0)
                 - 'is_active': bool
                 - 'highlight_progress': float  (0.0 – 1.0, for word/char modes)
+            background: Optional pre-scaled 1920×1080 RGBA PIL Image to use
+                as the background instead of the solid theme color.
 
         Returns:
             A 1920x1080 RGBA PIL Image.
         """
-        img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
+        if background is not None:
+            img = background.convert("RGBA")
+        else:
+            img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
 
         x, anchor, align, max_chars = self._get_horizontal_layout()
         highlight_mode = getattr(self.theme, "highlight_mode", "line")

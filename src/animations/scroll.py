@@ -123,7 +123,7 @@ class ScrollingAnimation:
 
         return visible
 
-    def make_frame(self, t: float, renderer) -> np.ndarray:
+    def make_frame(self, t: float, renderer, background=None) -> np.ndarray:
         """Return a HxWx3 uint8 numpy array for time t."""
         active_idx = self._find_active_idx(t)
 
@@ -145,5 +145,5 @@ class ScrollingAnimation:
             }
             for li in self.get_visible_lines(t)
         ]
-        img = renderer.render_scroll_frame(lines_data)
+        img = renderer.render_scroll_frame(lines_data, background=background)
         return np.array(img.convert("RGB"), dtype=np.uint8)

@@ -1,8 +1,11 @@
 """Main video generation engine."""
 
 from pathlib import Path
+from typing import Callable
 
-from moviepy import VideoClip
+import numpy as np
+from PIL import Image
+from moviepy import VideoClip, VideoFileClip
 
 from src.animations.scroll import ScrollingAnimation
 from src.core.audio_handler import load_audio
@@ -11,6 +14,51 @@ from src.core.text_renderer import TextRenderer
 from src.core.theme_loader import load_theme
 
 FPS_DEFAULT = 30
+
+# Target output resolution
+_WIDTH = 1920
+_HEIGHT = 1080
+
+
+def _fit_to_frame(img: Image.Image) -> Image.Image:
+    """Scale and center-crop a PIL image to 1920×1080 (cover mode)."""
+    orig_w, orig_h = img.size
+    scale = max(_WIDTH / orig_w, _HEIGHT / orig_h)
+    new_w = int(orig_w * scale)
+    new_h = int(orig_h * scale)
+    img = img.resize((new_w, new_h), Image.LANCZOS)
+    left = (new_w - _WIDTH) // 2
+    top = (new_h - _HEIGHT) // 2
+    return img.crop((left, top, left + _WIDTH, top + _HEIGHT))
+
+
+def _build_bg_frame_getter(
+    background_path: str | Path,
+) -> Callable[[float], Image.Image]:
+    """Return a function that maps video time t → background PIL Image.
+
+    Implements ping-pong looping: the clip plays forward then in reverse,
+    repeating as many times as needed.  The seam between the end of the
+    reverse pass and the start of the next forward pass is seamless because
+    both meet at frame 0 of the source clip.
+    """
+    clip = VideoFileClip(str(background_path))
+    bg_dur = clip.duration
+    cycle = 2.0 * bg_dur
+    # Small epsilon to avoid requesting a frame exactly at the last second
+    # (some decoders are off-by-one at the boundary).
+    _eps = 1.0 / 60.0
+
+    def get_bg_frame(t: float) -> Image.Image:
+        ct = t % cycle
+        bg_t = ct if ct <= bg_dur else cycle - ct
+        # Clamp within valid range
+        bg_t = min(max(bg_t, 0.0), bg_dur - _eps)
+        frame = clip.get_frame(bg_t)  # HxWx3 uint8
+        img = Image.fromarray(frame.astype(np.uint8), "RGB").convert("RGBA")
+        return _fit_to_frame(img)
+
+    return get_bg_frame
 
 
 def generate_video(
@@ -57,6 +105,12 @@ def generate_video(
     print(f"Generating video: {lyrics_data['title']} by {lyrics_data['artist']}")
     print(f"FPS: {fps} | Duration: {total_duration:.1f}s | Lyric lines: {len(lines)}")
 
+    # Build background frame getter (ping-pong loop) if a video was provided
+    bg_frame_getter = None
+    if background_path is not None:
+        print(f"Background: {background_path} (ping-pong loop)")
+        bg_frame_getter = _build_bg_frame_getter(background_path)
+
     # Build scrolling animation over all lines
     animation = ScrollingAnimation(
         lines=lines,
@@ -66,7 +120,8 @@ def generate_video(
     )
 
     def make_frame(t: float):
-        return animation.make_frame(t, renderer)
+        bg = bg_frame_getter(t) if bg_frame_getter is not None else None
+        return animation.make_frame(t, renderer, background=bg)
 
     # Build video clip
     video = VideoClip(frame_function=make_frame, duration=total_duration)
