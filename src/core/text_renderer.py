@@ -10,6 +10,9 @@ from src.core.theme_loader import Theme
 WIDTH = 1920
 HEIGHT = 1080
 
+# Horizontal column layout
+COLUMN_PADDING = 40  # px inset from screen edge for left/right positions
+
 
 class TextRenderer:
     """Renders styled lyric text onto PIL Images using a Theme."""
@@ -48,20 +51,18 @@ class TextRenderer:
         if not text:
             return img
 
+        x_h, anchor, align, max_chars = self._get_horizontal_layout()
+
         # Wrap long lines
-        wrapped = self._wrap_text(text)
+        wrapped = self._wrap_text(text, max_chars)
 
         # Create a transparent overlay for text (supports alpha)
         txt_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
         draw = ImageDraw.Draw(txt_layer)
 
-        # Measure text block
-        bbox = draw.multiline_textbbox((0, 0), wrapped, font=self.font)
-        text_w = bbox[2] - bbox[0]
-        text_h = bbox[3] - bbox[1]
-
-        # Position
-        x, y = self._compute_position(text_w, text_h)
+        # Vertical position
+        x = x_h
+        y = self._compute_vertical_position()
         y += y_offset
 
         # Convert alpha to 0-255
@@ -73,14 +74,14 @@ class TextRenderer:
             shadow_color = self._hex_to_rgba(self.theme.text_shadow_color, a)
             draw.multiline_text(
                 (x + sx, y + sy), wrapped, font=self.font,
-                fill=shadow_color, anchor="mm", align="center",
+                fill=shadow_color, anchor=anchor, align=align,
             )
 
         # Draw main text
         text_color = self._hex_to_rgba(self.theme.text_color, a)
         draw.multiline_text(
             (x, y), wrapped, font=self.font,
-            fill=text_color, anchor="mm", align="center",
+            fill=text_color, anchor=anchor, align=align,
         )
 
         return Image.alpha_composite(img, txt_layer)
@@ -100,6 +101,8 @@ class TextRenderer:
         """
         img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
 
+        x, anchor, align, max_chars = self._get_horizontal_layout()
+
         for line_data in lines_data:
             text = line_data.get("text", "")
             if not text:
@@ -109,9 +112,8 @@ class TextRenderer:
             alpha = line_data["alpha"]
             is_active = line_data.get("is_active", False)
 
-            wrapped = self._wrap_text(text)
+            wrapped = self._wrap_text(text, max_chars)
             a = int(alpha * 255)
-            x = WIDTH // 2
             y = int(screen_y)
 
             txt_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
@@ -124,7 +126,7 @@ class TextRenderer:
                 for dx, dy in ((-2, -2), (2, -2), (-2, 2), (2, 2)):
                     draw.multiline_text(
                         (x + dx, y + dy), wrapped, font=self.font,
-                        fill=glow_color, anchor="mm", align="center",
+                        fill=glow_color, anchor=anchor, align=align,
                     )
 
             # Shadow
@@ -133,34 +135,43 @@ class TextRenderer:
                 shadow_color = self._hex_to_rgba(self.theme.text_shadow_color, a)
                 draw.multiline_text(
                     (x + sx, y + sy), wrapped, font=self.font,
-                    fill=shadow_color, anchor="mm", align="center",
+                    fill=shadow_color, anchor=anchor, align=align,
                 )
 
             # Main text
             text_color = self._hex_to_rgba(self.theme.text_color, a)
             draw.multiline_text(
                 (x, y), wrapped, font=self.font,
-                fill=text_color, anchor="mm", align="center",
+                fill=text_color, anchor=anchor, align=align,
             )
 
             img = Image.alpha_composite(img, txt_layer)
 
         return img
 
+    def _get_horizontal_layout(self) -> tuple[int, str, str, int]:
+        """Return (x, anchor, align, max_chars) based on theme lyric_position."""
+        pos = getattr(self.theme, "lyric_position", "center")
+        if pos == "left":
+            return COLUMN_PADDING, "lm", "left", 20
+        elif pos == "right":
+            return WIDTH - COLUMN_PADDING, "rm", "right", 20
+        else:  # center (default)
+            return WIDTH // 2, "mm", "center", 40
+
     def _wrap_text(self, text: str, max_chars: int = 40) -> str:
         """Wrap text to fit within the frame width."""
         return "\n".join(textwrap.wrap(text, width=max_chars))
 
-    def _compute_position(self, text_w: int, text_h: int) -> tuple[int, int]:
-        """Compute text anchor position based on theme setting."""
+    def _compute_vertical_position(self) -> int:
+        """Return the vertical anchor y based on theme text_position."""
         pos = self.theme.text_position
-
         if pos == "top":
-            return WIDTH // 2, HEIGHT // 4
+            return HEIGHT // 4
         elif pos == "bottom":
-            return WIDTH // 2, (HEIGHT * 3) // 4
+            return (HEIGHT * 3) // 4
         else:  # center (default)
-            return WIDTH // 2, HEIGHT // 2
+            return HEIGHT // 2
 
     @staticmethod
     def _hex_to_rgba(hex_color: str, alpha: int = 255) -> tuple[int, int, int, int]:

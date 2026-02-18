@@ -20,7 +20,13 @@ DEFAULT_THEME = Path(__file__).resolve().parent.parent.parent / "themes" / "durt
 @click.option("--output", type=click.Path(), default=None, help="Output path (default: output/<title>.mp4).")
 @click.option("--fps", type=int, default=30, help="Frame rate (default: 30).")
 @click.option("--preview", is_flag=True, default=False, help="Generate only first 30 seconds.")
-def cli(song, lyrics, audio, background, no_background, theme, output, fps, preview):
+@click.option(
+    "--lyric-position",
+    type=click.Choice(["left", "center", "right"]),
+    default=None,
+    help="Horizontal lyric position: left, center, or right (overrides theme).",
+)
+def cli(song, lyrics, audio, background, no_background, theme, output, fps, preview, lyric_position):
     """Generate a lyric video from a lyrics JSON file and an audio track."""
     # Resolve input paths
     if song:
@@ -65,6 +71,7 @@ def cli(song, lyrics, audio, background, no_background, theme, output, fps, prev
         fps=fps,
         preview=preview,
         background_path=background_path,
+        lyric_position=lyric_position,
     )
 
 

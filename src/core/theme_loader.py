@@ -11,6 +11,7 @@ DEFAULTS = {
     "font_family": "Arial",
     "font_size": 72,
     "text_position": "center",
+    "lyric_position": "center",
     "text_shadow": False,
     "text_shadow_color": "#000000",
     "text_shadow_offset": [3, 3],
@@ -29,6 +30,7 @@ class Theme:
     font_family: str
     font_size: int
     text_position: str
+    lyric_position: str = "center"
     text_shadow: bool
     text_shadow_color: str
     text_shadow_offset: list[int] = field(default_factory=lambda: [3, 3])
@@ -64,6 +66,7 @@ def load_theme(filepath: str | Path | None = None) -> Theme:
         font_family=merged["font_family"],
         font_size=merged["font_size"],
         text_position=merged["text_position"],
+        lyric_position=merged["lyric_position"],
         text_shadow=merged["text_shadow"],
         text_shadow_color=merged["text_shadow_color"],
         text_shadow_offset=merged["text_shadow_offset"],

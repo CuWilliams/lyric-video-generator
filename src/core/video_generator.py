@@ -21,6 +21,7 @@ def generate_video(
     fps: int = FPS_DEFAULT,
     preview: bool = False,
     background_path: str | Path | None = None,
+    lyric_position: str | None = None,
 ) -> Path:
     """Generate a lyric video from lyrics JSON and an audio file.
 
@@ -40,6 +41,8 @@ def generate_video(
     lyrics_data = parse_lyrics(lyrics_path)
     audio = load_audio(audio_path)
     theme = load_theme(theme_path)
+    if lyric_position is not None:
+        theme.lyric_position = lyric_position
     renderer = TextRenderer(theme)
 
     lines = lyrics_data["lines"]
