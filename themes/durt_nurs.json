@@ -8,5 +8,7 @@
   "text_shadow": true,
   "text_shadow_color": "#000000",
   "text_shadow_offset": [3, 3],
-  "default_animation": "fade"
+  "line_height": 120,
+  "glow_enabled": true,
+  "inactive_alphas": [0.6, 0.4, 0.2]
 }

@@ -17,11 +17,10 @@ DEFAULT_THEME = Path(__file__).resolve().parent.parent.parent / "themes" / "durt
 @click.option("--background", default=None, type=click.Path(exists=True), help="Path to background video.")
 @click.option("--no-background", is_flag=True, default=False, help="Force solid color background.")
 @click.option("--theme", type=click.Path(exists=True), default=None, help="Path to theme JSON (default: durt_nurs).")
-@click.option("--animation", type=click.Choice(["fade", "slide", "typewriter"]), default="fade", help="Animation style.")
 @click.option("--output", type=click.Path(), default=None, help="Output path (default: output/<title>.mp4).")
 @click.option("--fps", type=int, default=30, help="Frame rate (default: 30).")
 @click.option("--preview", is_flag=True, default=False, help="Generate only first 30 seconds.")
-def cli(song, lyrics, audio, background, no_background, theme, animation, output, fps, preview):
+def cli(song, lyrics, audio, background, no_background, theme, output, fps, preview):
     """Generate a lyric video from a lyrics JSON file and an audio track."""
     # Resolve input paths
     if song:
@@ -63,7 +62,6 @@ def cli(song, lyrics, audio, background, no_background, theme, animation, output
         audio_path=audio,
         output_path=output,
         theme_path=theme_path,
-        animation_name=animation,
         fps=fps,
         preview=preview,
         background_path=background_path,

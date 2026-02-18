@@ -14,7 +14,9 @@ DEFAULTS = {
     "text_shadow": False,
     "text_shadow_color": "#000000",
     "text_shadow_offset": [3, 3],
-    "default_animation": "fade",
+    "line_height": 120,
+    "glow_enabled": True,
+    "inactive_alphas": [0.6, 0.4, 0.2],
 }
 
 
@@ -30,7 +32,9 @@ class Theme:
     text_shadow: bool
     text_shadow_color: str
     text_shadow_offset: list[int] = field(default_factory=lambda: [3, 3])
-    default_animation: str = "fade"
+    line_height: int = 120
+    glow_enabled: bool = True
+    inactive_alphas: list[float] = field(default_factory=lambda: [0.6, 0.4, 0.2])
 
 
 def load_theme(filepath: str | Path | None = None) -> Theme:
@@ -63,5 +67,7 @@ def load_theme(filepath: str | Path | None = None) -> Theme:
         text_shadow=merged["text_shadow"],
         text_shadow_color=merged["text_shadow_color"],
         text_shadow_offset=merged["text_shadow_offset"],
-        default_animation=merged["default_animation"],
+        line_height=merged["line_height"],
+        glow_enabled=merged["glow_enabled"],
+        inactive_alphas=merged["inactive_alphas"],
     )

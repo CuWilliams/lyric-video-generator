@@ -85,6 +85,68 @@ class TextRenderer:
 
         return Image.alpha_composite(img, txt_layer)
 
+    def render_scroll_frame(self, lines_data: list[dict]) -> Image.Image:
+        """Render multiple lyric lines for the scrolling view.
+
+        Args:
+            lines_data: List of dicts with keys:
+                - 'text': str
+                - 'screen_y': float  (center y position on screen)
+                - 'alpha': float     (0.0 – 1.0)
+                - 'is_active': bool
+
+        Returns:
+            A 1920x1080 RGBA PIL Image.
+        """
+        img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
+
+        for line_data in lines_data:
+            text = line_data.get("text", "")
+            if not text:
+                continue
+
+            screen_y = line_data["screen_y"]
+            alpha = line_data["alpha"]
+            is_active = line_data.get("is_active", False)
+
+            wrapped = self._wrap_text(text)
+            a = int(alpha * 255)
+            x = WIDTH // 2
+            y = int(screen_y)
+
+            txt_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(txt_layer)
+
+            # Soft glow for active line
+            if is_active and getattr(self.theme, "glow_enabled", True):
+                glow_a = int(alpha * 38)  # ~15% opacity
+                glow_color = self._hex_to_rgba(self.theme.text_color, glow_a)
+                for dx, dy in ((-2, -2), (2, -2), (-2, 2), (2, 2)):
+                    draw.multiline_text(
+                        (x + dx, y + dy), wrapped, font=self.font,
+                        fill=glow_color, anchor="mm", align="center",
+                    )
+
+            # Shadow
+            if self.theme.text_shadow:
+                sx, sy = self.theme.text_shadow_offset
+                shadow_color = self._hex_to_rgba(self.theme.text_shadow_color, a)
+                draw.multiline_text(
+                    (x + sx, y + sy), wrapped, font=self.font,
+                    fill=shadow_color, anchor="mm", align="center",
+                )
+
+            # Main text
+            text_color = self._hex_to_rgba(self.theme.text_color, a)
+            draw.multiline_text(
+                (x, y), wrapped, font=self.font,
+                fill=text_color, anchor="mm", align="center",
+            )
+
+            img = Image.alpha_composite(img, txt_layer)
+
+        return img
+
     def _wrap_text(self, text: str, max_chars: int = 40) -> str:
         """Wrap text to fit within the frame width."""
         return "\n".join(textwrap.wrap(text, width=max_chars))
