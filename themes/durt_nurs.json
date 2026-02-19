@@ -11,7 +11,5 @@
   "font_size": 72,
   "line_spacing": 1.5,
   "lyric_position": "center",
-  "highlight_mode": "line",
-  "text_overlay_opacity": 0,
-  "text_overlay_color": "#000000"
+  "highlight_mode": "line"
 }

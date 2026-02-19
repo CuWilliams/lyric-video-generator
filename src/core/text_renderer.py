@@ -11,7 +11,7 @@ WIDTH = 1920
 HEIGHT = 1080
 
 # Horizontal column layout
-COLUMN_PADDING = 40  # px inset from screen edge for left/right positions
+COLUMN_PADDING = 80  # px inset from screen edge for left/right positions
 
 
 class TextRenderer:
@@ -130,25 +130,6 @@ class TextRenderer:
             img = background.convert("RGBA")
         else:
             img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
-
-        # Draw semi-transparent overlay strip between background and lyrics
-        overlay_opacity = self.theme.text_overlay_opacity
-        if overlay_opacity > 0:
-            overlay_alpha = int(overlay_opacity / 100 * 255)
-            pos = self.theme.lyric_position
-            col_w = WIDTH // 3
-            if pos == "left":
-                ox = 0
-            elif pos == "right":
-                ox = WIDTH - col_w
-            else:  # center
-                ox = col_w
-            overlay_color = self._hex_to_rgba(self.theme.text_overlay_color, overlay_alpha)
-            overlay_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
-            ImageDraw.Draw(overlay_layer).rectangle(
-                [ox, 0, ox + col_w - 1, HEIGHT - 1], fill=overlay_color
-            )
-            img = Image.alpha_composite(img, overlay_layer)
 
         x, anchor, align, max_chars = self._get_horizontal_layout()
         highlight_mode = self.theme.highlight_mode
@@ -317,9 +298,9 @@ class TextRenderer:
         """Return (x, anchor, align, max_chars) based on theme lyric_position."""
         pos = self.theme.lyric_position
         if pos == "left":
-            return COLUMN_PADDING, "lm", "left", 20
+            return COLUMN_PADDING, "lm", "left", 40
         elif pos == "right":
-            return WIDTH - COLUMN_PADDING, "rm", "right", 20
+            return WIDTH - COLUMN_PADDING, "rm", "right", 40
         else:  # center (default)
             return WIDTH // 2, "mm", "center", 40
 

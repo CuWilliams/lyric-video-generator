@@ -32,13 +32,7 @@ DEFAULT_THEME = Path(__file__).resolve().parent.parent.parent / "themes" / "durt
     default=None,
     help="Word/character highlighting mode: line (default), word, or character (overrides theme).",
 )
-@click.option(
-    "--text-overlay",
-    type=click.IntRange(0, 100),
-    default=None,
-    help="Opacity (0–100) of the semi-transparent overlay behind the lyrics column (overrides theme).",
-)
-def cli(song, lyrics, audio, background, no_background, theme, output, fps, preview, lyric_position, highlight_mode, text_overlay):
+def cli(song, lyrics, audio, background, no_background, theme, output, fps, preview, lyric_position, highlight_mode):
     """Generate a lyric video from a lyrics JSON file and an audio track."""
     # Resolve input paths
     if song:
@@ -85,7 +79,6 @@ def cli(song, lyrics, audio, background, no_background, theme, output, fps, prev
         background_path=background_path,
         lyric_position=lyric_position,
         highlight_mode=highlight_mode,
-        text_overlay_opacity=text_overlay,
     )
 
 

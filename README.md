@@ -65,9 +65,8 @@ lyric-video --lyrics input/lyrics/disciples-of-dysfunction.json \
 | `--background` | No | auto-matched | Path to background video |
 | `--no-background` | No | off | Force solid color background |
 | `--theme` | No | `themes/durt_nurs.json` | Path to theme JSON |
-| `--lyric-position` | No | theme default | Lyric column: `left`, `center`, or `right` (overrides theme) |
+| `--lyric-position` | No | theme default | Text alignment: `left`, `center`, or `right` (overrides theme) |
 | `--highlight-mode` | No | theme default | Active line style: `line`, `word`, or `character` (overrides theme) |
-| `--text-overlay` | No | theme default | Overlay strip opacity behind lyrics, 0–100 (overrides theme) |
 | `--output` | No | `output/<title>.mp4` | Output file path |
 | `--fps` | No | `30` | Frame rate |
 | `--preview` | No | off | Generate only first 30 seconds |
@@ -96,7 +95,6 @@ lyric-video --song disciples-of-dysfunction --background /path/to/custom_bg.mp4
 
 # Override style flags (all override the active theme)
 lyric-video --song disciples-of-dysfunction --lyric-position left --highlight-mode word
-lyric-video --song disciples-of-dysfunction --text-overlay 60 --no-background
 ```
 
 You can also run the CLI directly without installing the package:
@@ -159,9 +157,7 @@ Themes are JSON files that control the visual style. The default theme is `theme
   "font_size": 72,
   "line_spacing": 1.5,
   "lyric_position": "center",
-  "highlight_mode": "line",
-  "text_overlay_opacity": 0,
-  "text_overlay_color": "#000000"
+  "highlight_mode": "line"
 }
 ```
 
@@ -175,7 +171,6 @@ Themes are JSON files that control the visual style. The default theme is `theme
 | `text_color` | Color of inactive lyric lines | `#ffffff` |
 | `active_text_color` | Color of the currently active line. `null` falls back to `text_color` | `null` |
 | `active_glow_color` | Color of the soft glow on the active line. `null` falls back to `active_text_color` | `null` |
-| `text_overlay_color` | Hex color of the semi-transparent overlay strip behind lyrics | `#000000` |
 | `text_shadow_color` | Hex color of the text drop shadow | `#000000` |
 
 **Active Line**
@@ -198,7 +193,7 @@ Themes are JSON files that control the visual style. The default theme is `theme
 | `font_family` | Font name or path (falls back through common system fonts) | `Arial` |
 | `font_size` | Base font size in pixels | `72` |
 | `line_spacing` | Line height as a multiplier of `font_size` (e.g. `1.5` = 1.5× font size) | `1.5` |
-| `lyric_position` | Horizontal column for lyrics: `left`, `center`, or `right` | `center` |
+| `lyric_position` | Horizontal text alignment: `left`, `center`, or `right` | `center` |
 
 **Highlighting**
 
@@ -206,13 +201,6 @@ Themes are JSON files that control the visual style. The default theme is `theme
 |----------|-------------|---------|
 | `highlight_mode` | How the active line is highlighted: `line` (full line), `word`, or `character` | `line` |
 | `highlight_dim_alpha` | Opacity of un-highlighted tokens in `word`/`character` mode (0.0–1.0) | `0.3` |
-
-**Overlay Strip**
-
-| Property | Description | Default |
-|----------|-------------|---------|
-| `text_overlay_opacity` | Opacity of a color strip behind the lyric column (0–100). `0` disables it | `0` |
-| `text_overlay_color` | Color of the overlay strip | `#000000` |
 
 **Text Shadow**
 

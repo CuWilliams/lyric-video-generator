@@ -19,8 +19,6 @@ DEFAULTS = {
     "lyric_position": "center",
     "highlight_mode": "line",
     "highlight_dim_alpha": 0.3,
-    "text_overlay_opacity": 0,
-    "text_overlay_color": "#000000",
     # Kept for backward compatibility
     "text_position": "center",
     "text_shadow": False,
@@ -46,8 +44,6 @@ class Theme:
     lyric_position: str = "center"
     highlight_mode: str = "line"
     highlight_dim_alpha: float = 0.3
-    text_overlay_opacity: int = 0
-    text_overlay_color: str = "#000000"
     # Backward-compat fields
     text_position: str = "center"
     text_shadow: bool = False
@@ -88,7 +84,7 @@ def _validate_theme(data: dict, filepath) -> None:
     """Raise ValueError with clear messages if theme data contains invalid values."""
     errors = []
 
-    for key in ("background_color", "text_color", "text_shadow_color", "text_overlay_color"):
+    for key in ("background_color", "text_color", "text_shadow_color"):
         val = data.get(key)
         if val is not None and not _is_valid_hex_color(val):
             errors.append(f"'{key}': '{val}' is not a valid hex color (expected #RRGGBB)")
@@ -116,10 +112,6 @@ def _validate_theme(data: dict, filepath) -> None:
     ls = data.get("line_spacing")
     if ls is not None and (not isinstance(ls, (int, float)) or ls <= 0):
         errors.append("'line_spacing': must be a positive number")
-
-    op = data.get("text_overlay_opacity")
-    if op is not None and not (isinstance(op, (int, float)) and 0 <= op <= 100):
-        errors.append("'text_overlay_opacity': must be a number between 0 and 100")
 
     fs = data.get("font_size")
     if fs is not None and (not isinstance(fs, int) or fs <= 0):
@@ -160,8 +152,6 @@ def load_theme(filepath: str | Path | None = None) -> Theme:
             lyric_position=DEFAULTS["lyric_position"],
             highlight_mode=DEFAULTS["highlight_mode"],
             highlight_dim_alpha=DEFAULTS["highlight_dim_alpha"],
-            text_overlay_opacity=DEFAULTS["text_overlay_opacity"],
-            text_overlay_color=DEFAULTS["text_overlay_color"],
             text_position=DEFAULTS["text_position"],
             text_shadow=DEFAULTS["text_shadow"],
             text_shadow_color=DEFAULTS["text_shadow_color"],
@@ -203,8 +193,6 @@ def load_theme(filepath: str | Path | None = None) -> Theme:
         lyric_position=merged["lyric_position"],
         highlight_mode=merged["highlight_mode"],
         highlight_dim_alpha=merged["highlight_dim_alpha"],
-        text_overlay_opacity=merged["text_overlay_opacity"],
-        text_overlay_color=merged["text_overlay_color"],
         text_position=merged["text_position"],
         text_shadow=merged["text_shadow"],
         text_shadow_color=merged["text_shadow_color"],

@@ -71,7 +71,6 @@ def generate_video(
     background_path: str | Path | None = None,
     lyric_position: str | None = None,
     highlight_mode: str | None = None,
-    text_overlay_opacity: int | None = None,
 ) -> Path:
     """Generate a lyric video from lyrics JSON and an audio file.
 
@@ -95,8 +94,6 @@ def generate_video(
         theme.lyric_position = lyric_position
     if highlight_mode is not None:
         theme.highlight_mode = highlight_mode
-    if text_overlay_opacity is not None:
-        theme.text_overlay_opacity = text_overlay_opacity
     renderer = TextRenderer(theme)
 
     lines = lyrics_data["lines"]
