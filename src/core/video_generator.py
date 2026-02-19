@@ -100,7 +100,9 @@ def generate_video(
     total_duration = audio.duration
     if preview:
         total_duration = min(total_duration, 30.0)
-        lines = [line for line in lines if line.start_time < total_duration]
+        # Keep all lines — those beyond total_duration are never reached by
+        # make_frame(t) but are needed so the scroll queue shows upcoming lines
+        # right up to the end of the preview window.
 
     print(f"Generating video: {lyrics_data['title']} by {lyrics_data['artist']}")
     print(f"FPS: {fps} | Duration: {total_duration:.1f}s | Lyric lines: {len(lines)}")

@@ -1,5 +1,6 @@
 """Continuous scrolling lyric animation engine."""
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -7,8 +8,16 @@ import numpy as np
 WIDTH = 1920
 HEIGHT = 1080
 
-# Max duration (seconds) of the scroll transition between lines.
-TRANSITION_DURATION = 0.5
+# Maximum seconds before the next line's start_time to begin scrolling.
+SCROLL_LEAD_SECONDS = 1.5
+
+# Fraction of the time between consecutive start_times to use for scrolling.
+# The remainder is a stationary hold while the current line is highlighted.
+# e.g. 0.40 → scroll occupies at most 40% of a line's slot.
+SCROLL_LEAD_FRACTION = 0.40
+
+# How many seconds before the first lyric line to begin the pre-roll scroll.
+INTRO_SCROLL_SECONDS = 3.0
 
 
 @dataclass
@@ -22,10 +31,9 @@ class LineRenderInfo:
 class ScrollingAnimation:
     """Renders all lyric lines as a continuous scrolling stream.
 
-    Virtual space: line i sits at y = i * line_height.  The view window
-    scrolls so the active line is always centered.  Transitions between
-    lines are smoothed; long instrumental gaps hold the view in place until
-    the next line approaches.
+    Virtual space: line i sits at y = i * line_height.  Each line holds
+    at the center for most of its slot, then the view glides to the next
+    line's center position, arriving exactly at that line's start_time.
     """
 
     def __init__(self, lines, fps: int, line_height: int = 120,
@@ -33,7 +41,7 @@ class ScrollingAnimation:
         self.lines = lines
         self.fps = fps
         self.line_height = line_height
-        # Opacity by distance from active line: [1 away, 2 away, 3 away]
+        # Length controls how many lines are visible each side of center.
         self.inactive_alphas = inactive_alphas or [0.6, 0.4, 0.2]
         self._transitions = self._compute_transitions()
 
@@ -42,26 +50,26 @@ class ScrollingAnimation:
     # ------------------------------------------------------------------
 
     def _compute_transitions(self) -> list[tuple[float, float, int, int]]:
-        """Build (t_start, t_end, from_idx, to_idx) for each line change."""
+        """Build (t_start, t_end, from_idx, to_idx) for each line change.
+
+        Transitions are anchored to consecutive start_times, not end_times.
+        Because the lyrics parser sets end_time[i] = start_time[i+1], there
+        is never a true gap between lines.  Instead, each line occupies a
+        time slot from start_time[i] to start_time[i+1]; the scroll uses the
+        trailing SCROLL_LEAD_FRACTION of that slot so the view arrives at the
+        next line's center exactly at start_time[i+1].
+        """
         result = []
         for i in range(len(self.lines) - 1):
-            end_t = self.lines[i].end_time
-            start_t = self.lines[i + 1].start_time
-            gap = start_t - end_t
+            t_next = self.lines[i + 1].start_time
+            t_this = self.lines[i].start_time
+            available = t_next - t_this  # full slot for line i
 
-            if gap <= 0:
-                # Overlapping or adjacent — snap instantly at start_t
-                t_start = start_t
-                t_end = start_t
-            elif gap <= TRANSITION_DURATION:
-                # Short gap — animate over the entire gap
-                t_start = end_t
-                t_end = start_t
-            else:
-                # Long gap (instrumental break) — hold, then animate in the
-                # last TRANSITION_DURATION seconds before the next line
-                t_start = start_t - TRANSITION_DURATION
-                t_end = start_t
+            # Scroll duration: smaller of the cap or a fraction of the slot.
+            scroll_dur = min(SCROLL_LEAD_SECONDS, available * SCROLL_LEAD_FRACTION)
+
+            t_end = t_next            # scroll completes exactly when next line starts
+            t_start = t_end - scroll_dur
 
             result.append((t_start, t_end, i, i + 1))
         return result
@@ -82,6 +90,17 @@ class ScrollingAnimation:
 
     def _compute_scroll_pos(self, t: float) -> float:
         """Virtual y coordinate that should be centered on screen at time t."""
+        # Pre-roll: before the first lyric, scroll lines 0 and 1 up from below.
+        if self.lines and t < self.lines[0].start_time:
+            first_start = self.lines[0].start_time
+            intro_start_t = max(0.0, first_start - INTRO_SCROLL_SECONDS)
+            intro_start_pos = -2.0 * self.line_height  # lines 0+1 below center
+            if t <= intro_start_t:
+                return intro_start_pos
+            raw = (t - intro_start_t) / (first_start - intro_start_t)
+            eased = raw * raw * (3.0 - 2.0 * raw)
+            return intro_start_pos * (1.0 - eased)  # approaches 0.0 (line 0 at center)
+
         for t_start, t_end, from_idx, to_idx in self._transitions:
             if t_start <= t <= t_end:
                 if t_end == t_start:
@@ -91,18 +110,39 @@ class ScrollingAnimation:
                 eased = raw * raw * (3.0 - 2.0 * raw)
                 return from_idx * self.line_height + eased * self.line_height
 
+        # No active transition — rest at the most recently reached position.
+        # For long-gap transitions that have completed, active_idx still points
+        # to the FROM line (not yet sung TO line), so using it would snap the
+        # view back to the wrong position. Instead, use the last transition's
+        # to_idx so the view holds at the next line's center until it goes active.
+        for t_start, t_end, from_idx, to_idx in reversed(self._transitions):
+            if t >= t_end:
+                return to_idx * self.line_height
+
+        # Before any transition has started (early in the song).
         active_idx = self._find_active_idx(t)
         if active_idx < 0:
             return 0.0
         return active_idx * self.line_height
+
+    def _screen_pos_to_alpha(self, screen_y: float) -> float:
+        """Continuous opacity: 1.0 at center, cosine taper to 0.0 at max visible distance.
+
+        Uses the length of inactive_alphas to determine how many line-slots are
+        rendered in each direction (e.g. 3 values → up to 3 lines each side).
+        """
+        dist_lines = abs(screen_y - HEIGHT / 2.0) / self.line_height
+        max_dist = len(self.inactive_alphas) + 1  # e.g. 4.0 with default [0.6,0.4,0.2]
+        if dist_lines >= max_dist:
+            return 0.0
+        return 0.5 * (1.0 + math.cos(math.pi * dist_lines / max_dist))
 
     def get_visible_lines(self, t: float) -> list[LineRenderInfo]:
         """Return render info for every line visible at time t."""
         scroll_pos = self._compute_scroll_pos(t)
         active_idx = self._find_active_idx(t)
         center_y = HEIGHT / 2.0
-
-        opacity_by_distance = [1.0] + list(self.inactive_alphas)
+        max_dist = len(self.inactive_alphas) + 1
 
         visible: list[LineRenderInfo] = []
         for i, line in enumerate(self.lines):
@@ -110,14 +150,14 @@ class ScrollingAnimation:
             if screen_y < -self.line_height or screen_y > HEIGHT + self.line_height:
                 continue
 
-            distance = abs(i - active_idx) if active_idx >= 0 else len(opacity_by_distance)
-            if distance >= len(opacity_by_distance):
+            dist_lines = abs(screen_y - center_y) / self.line_height
+            if dist_lines >= max_dist:
                 continue
 
             visible.append(LineRenderInfo(
                 text=line.text,
                 screen_y=screen_y,
-                alpha=opacity_by_distance[distance],
+                alpha=self._screen_pos_to_alpha(screen_y),
                 is_active=(i == active_idx),
             ))
 

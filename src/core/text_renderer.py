@@ -146,7 +146,7 @@ class TextRenderer:
 
             wrapped = self._wrap_text(text, max_chars)
             a = int(alpha * 255)
-            y = int(screen_y)
+            y = round(screen_y)
             font = self._get_font(is_active)
 
             txt_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
