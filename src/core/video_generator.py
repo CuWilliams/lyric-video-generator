@@ -119,7 +119,7 @@ def generate_video(
         lines=lines,
         fps=fps,
         line_height=theme.line_height,
-        inactive_alphas=theme.inactive_alphas,
+        inactive_alphas=theme.inactive_text_opacity_gradient,
     )
 
     def make_frame(t: float):

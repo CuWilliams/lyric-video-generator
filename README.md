@@ -140,27 +140,77 @@ Themes are JSON files that control the visual style. The default theme is `theme
   "name": "Durt Nurs",
   "background_color": "#1a1a1a",
   "text_color": "#ffffff",
+  "active_text_color": "#ffcc00",
+  "active_text_bold": true,
+  "active_text_glow": true,
+  "active_glow_color": "#ffcc00",
+  "inactive_text_opacity_gradient": [0.6, 0.4, 0.2],
   "font_family": "Arial Bold",
   "font_size": 72,
-  "text_position": "center",
-  "text_shadow": true,
-  "text_shadow_color": "#000000",
-  "text_shadow_offset": [3, 3],
-  "default_animation": "fade"
+  "line_spacing": 1.5,
+  "lyric_position": "center",
+  "highlight_mode": "line",
+  "text_overlay_opacity": 0,
+  "text_overlay_color": "#000000"
 }
 ```
 
+### Theme Properties
+
+**Colors**
+
 | Property | Description | Default |
 |----------|-------------|---------|
-| `background_color` | Hex background color | `#1a1a1a` |
-| `text_color` | Hex text color | `#ffffff` |
-| `font_family` | Font name (falls back to system fonts) | `Arial` |
-| `font_size` | Font size in pixels | `72` |
-| `text_position` | `top`, `center`, or `bottom` | `center` |
-| `text_shadow` | Enable text shadow | `false` |
-| `text_shadow_color` | Hex shadow color | `#000000` |
-| `text_shadow_offset` | Shadow offset `[x, y]` in pixels | `[3, 3]` |
-| `default_animation` | Default animation style | `fade` |
+| `background_color` | Solid background color (hex `#RRGGBB`) | `#1a1a1a` |
+| `text_color` | Color of inactive lyric lines | `#ffffff` |
+| `active_text_color` | Color of the currently active line. `null` falls back to `text_color` | `null` |
+| `active_glow_color` | Color of the soft glow on the active line. `null` falls back to `active_text_color` | `null` |
+| `text_overlay_color` | Hex color of the semi-transparent overlay strip behind lyrics | `#000000` |
+| `text_shadow_color` | Hex color of the text drop shadow | `#000000` |
+
+**Active Line**
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| `active_text_bold` | Render the active line in a bold font variant | `false` |
+| `active_text_glow` | Enable a soft glow halo around the active line | `true` |
+
+**Inactive Lines**
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| `inactive_text_opacity_gradient` | Array of opacities for lines 1, 2, 3 positions away from the active line | `[0.6, 0.4, 0.2]` |
+
+**Font & Layout**
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| `font_family` | Font name or path (falls back through common system fonts) | `Arial` |
+| `font_size` | Base font size in pixels | `72` |
+| `line_spacing` | Line height as a multiplier of `font_size` (e.g. `1.5` = 1.5× font size) | `1.5` |
+| `lyric_position` | Horizontal column for lyrics: `left`, `center`, or `right` | `center` |
+
+**Highlighting**
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| `highlight_mode` | How the active line is highlighted: `line` (full line), `word`, or `character` | `line` |
+| `highlight_dim_alpha` | Opacity of un-highlighted tokens in `word`/`character` mode (0.0–1.0) | `0.3` |
+
+**Overlay Strip**
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| `text_overlay_opacity` | Opacity of a color strip behind the lyric column (0–100). `0` disables it | `0` |
+| `text_overlay_color` | Color of the overlay strip | `#000000` |
+
+**Text Shadow**
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| `text_shadow` | Enable a drop shadow on all text | `false` |
+| `text_shadow_color` | Hex color of the shadow | `#000000` |
+| `text_shadow_offset` | Shadow offset as `[x, y]` pixels | `[3, 3]` |
 
 ## Project Structure
 

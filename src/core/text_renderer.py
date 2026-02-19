@@ -20,6 +20,7 @@ class TextRenderer:
     def __init__(self, theme: Theme):
         self.theme = theme
         self.font = self._load_font()
+        self.bold_font = self._load_bold_font()
 
     def _load_font(self) -> ImageFont.FreeTypeFont:
         """Load the theme font, falling back to default if unavailable."""
@@ -33,6 +34,29 @@ class TextRenderer:
                 except OSError:
                     continue
             return ImageFont.load_default()
+
+    def _load_bold_font(self) -> ImageFont.FreeTypeFont:
+        """Load a bold font variant for active line rendering.
+
+        If active_text_bold is False, or the base font is already bold,
+        returns self.font unchanged.
+        """
+        if not self.theme.active_text_bold:
+            return self.font
+        # If font_family already contains "bold", it is already bold
+        if "bold" in self.theme.font_family.lower():
+            return self.font
+        bold_name = self.theme.font_family + " Bold"
+        try:
+            return ImageFont.truetype(bold_name, self.theme.font_size)
+        except OSError:
+            return self.font
+
+    def _get_font(self, is_active: bool = False) -> ImageFont.FreeTypeFont:
+        """Return the appropriate font for the given line."""
+        if is_active:
+            return self.bold_font
+        return self.font
 
     def render_frame(self, text: str, alpha: float = 1.0, y_offset: int = 0) -> Image.Image:
         """Render a single frame with the given text.
@@ -108,10 +132,10 @@ class TextRenderer:
             img = Image.new("RGBA", (WIDTH, HEIGHT), self.theme.background_color)
 
         # Draw semi-transparent overlay strip between background and lyrics
-        overlay_opacity = getattr(self.theme, "text_overlay_opacity", 0)
+        overlay_opacity = self.theme.text_overlay_opacity
         if overlay_opacity > 0:
             overlay_alpha = int(overlay_opacity / 100 * 255)
-            pos = getattr(self.theme, "lyric_position", "center")
+            pos = self.theme.lyric_position
             col_w = WIDTH // 3
             if pos == "left":
                 ox = 0
@@ -119,9 +143,7 @@ class TextRenderer:
                 ox = WIDTH - col_w
             else:  # center
                 ox = col_w
-            overlay_color = self._hex_to_rgba(
-                getattr(self.theme, "text_overlay_color", "#000000"), overlay_alpha
-            )
+            overlay_color = self._hex_to_rgba(self.theme.text_overlay_color, overlay_alpha)
             overlay_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
             ImageDraw.Draw(overlay_layer).rectangle(
                 [ox, 0, ox + col_w - 1, HEIGHT - 1], fill=overlay_color
@@ -129,7 +151,7 @@ class TextRenderer:
             img = Image.alpha_composite(img, overlay_layer)
 
         x, anchor, align, max_chars = self._get_horizontal_layout()
-        highlight_mode = getattr(self.theme, "highlight_mode", "line")
+        highlight_mode = self.theme.highlight_mode
 
         for line_data in lines_data:
             text = line_data.get("text", "")
@@ -144,17 +166,18 @@ class TextRenderer:
             wrapped = self._wrap_text(text, max_chars)
             a = int(alpha * 255)
             y = int(screen_y)
+            font = self._get_font(is_active)
 
             txt_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
             draw = ImageDraw.Draw(txt_layer)
 
             # Soft glow for active line
-            if is_active and getattr(self.theme, "glow_enabled", True):
+            if is_active and self.theme.active_text_glow:
                 glow_a = int(alpha * 38)  # ~15% opacity
-                glow_color = self._hex_to_rgba(self.theme.text_color, glow_a)
+                glow_color = self._hex_to_rgba(self.theme.effective_active_glow_color, glow_a)
                 for dx, dy in ((-2, -2), (2, -2), (-2, 2), (2, 2)):
                     draw.multiline_text(
-                        (x + dx, y + dy), wrapped, font=self.font,
+                        (x + dx, y + dy), wrapped, font=font,
                         fill=glow_color, anchor=anchor, align=align,
                     )
 
@@ -163,19 +186,20 @@ class TextRenderer:
                 sx, sy = self.theme.text_shadow_offset
                 shadow_color = self._hex_to_rgba(self.theme.text_shadow_color, a)
                 draw.multiline_text(
-                    (x + sx, y + sy), wrapped, font=self.font,
+                    (x + sx, y + sy), wrapped, font=font,
                     fill=shadow_color, anchor=anchor, align=align,
                 )
 
             # Main text — use token-level highlighting for active line in word/char mode
             if is_active and highlight_mode in ("word", "character"):
                 self._render_highlighted_tokens(
-                    draw, wrapped, y, alpha, highlight_progress, highlight_mode,
+                    draw, wrapped, y, alpha, highlight_progress, highlight_mode, font,
                 )
             else:
-                text_color = self._hex_to_rgba(self.theme.text_color, a)
+                color = self.theme.effective_active_text_color if is_active else self.theme.text_color
+                text_color = self._hex_to_rgba(color, a)
                 draw.multiline_text(
-                    (x, y), wrapped, font=self.font,
+                    (x, y), wrapped, font=font,
                     fill=text_color, anchor=anchor, align=align,
                 )
 
@@ -191,6 +215,7 @@ class TextRenderer:
         alpha: float,
         progress: float,
         mode: str,
+        font: ImageFont.FreeTypeFont | None = None,
     ) -> None:
         """Render text with progressive word- or character-level highlighting.
 
@@ -204,15 +229,19 @@ class TextRenderer:
             alpha: Overall line opacity (0.0 – 1.0).
             progress: Fraction of the line's duration elapsed (0.0 – 1.0).
             mode: ``"word"`` or ``"character"``.
+            font: Font to use; defaults to self.font.
         """
+        if font is None:
+            font = self.font
+
         display_lines = wrapped_text.split("\n")
         n_lines = len(display_lines)
-        pos = getattr(self.theme, "lyric_position", "center")
+        pos = self.theme.lyric_position
 
         a_full = int(alpha * 255)
-        dim_frac = getattr(self.theme, "highlight_dim_alpha", 0.3)
+        dim_frac = self.theme.highlight_dim_alpha
         a_dim = int(alpha * dim_frac * 255)
-        color_full = self._hex_to_rgba(self.theme.text_color, a_full)
+        color_full = self._hex_to_rgba(self.theme.effective_active_text_color, a_full)
         color_dim = self._hex_to_rgba(self.theme.text_color, a_dim)
 
         # Count all tokens across every display line to set the threshold.
@@ -225,7 +254,7 @@ class TextRenderer:
 
         # Font metrics for vertical positioning of individual wrapped lines.
         try:
-            ascent, descent = self.font.getmetrics()
+            ascent, descent = font.getmetrics()
         except AttributeError:
             ascent = self.theme.font_size
             descent = int(self.theme.font_size * 0.2)
@@ -257,9 +286,9 @@ class TextRenderer:
 
             # Starting x: replicate the alignment logic using per-line width.
             try:
-                line_width = self.font.getlength(display_line)
+                line_width = font.getlength(display_line)
             except AttributeError:
-                line_width, _ = self.font.getsize(display_line)  # type: ignore[attr-defined]
+                line_width, _ = font.getsize(display_line)  # type: ignore[attr-defined]
 
             if pos == "left":
                 x_cursor = float(COLUMN_PADDING)
@@ -273,20 +302,20 @@ class TextRenderer:
                 draw.text(
                     (x_cursor, line_center_y),
                     token_str,
-                    font=self.font,
+                    font=font,
                     fill=color,
                     anchor="lm",
                 )
                 try:
-                    token_width = self.font.getlength(token_str)
+                    token_width = font.getlength(token_str)
                 except AttributeError:
-                    token_width, _ = self.font.getsize(token_str)  # type: ignore[attr-defined]
+                    token_width, _ = font.getsize(token_str)  # type: ignore[attr-defined]
                 x_cursor += token_width
                 token_idx += 1
 
     def _get_horizontal_layout(self) -> tuple[int, str, str, int]:
         """Return (x, anchor, align, max_chars) based on theme lyric_position."""
-        pos = getattr(self.theme, "lyric_position", "center")
+        pos = self.theme.lyric_position
         if pos == "left":
             return COLUMN_PADDING, "lm", "left", 20
         elif pos == "right":
