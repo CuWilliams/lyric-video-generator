@@ -23,7 +23,7 @@ lyric-video --lyrics input/lyrics/disciples-of-dysfunction.json --audio input/au
 python -m src.cli.main --song disciples-of-dysfunction
 
 # CLI options
-lyric-video --song NAME | --lyrics FILE --audio FILE [--background FILE] [--no-background] [--theme FILE] [--animation fade|slide|typewriter] [--output PATH] [--fps 30] [--preview]
+lyric-video --song NAME | --lyrics FILE --audio FILE [--background FILE] [--no-background] [--theme FILE] [--lyric-position left|center|right] [--highlight-mode line|word|character] [--text-overlay 0-100] [--output PATH] [--fps 30] [--preview]
 ```
 
 FFmpeg must be installed on the system (required by moviepy).
@@ -43,12 +43,11 @@ No test suite or linting is currently configured.
 - `song_resolver.py` — Auto-matches song files from `input/` directories by name. Resolves lyrics, audio, and background paths.
 
 **Animation system** (`src/animations/`):
-- `base.py` — Abstract `BaseAnimation` with `generate_frames(text, duration, fps, renderer) -> list[PIL.Image]`.
-- Three implementations: `fade.py`, `slide.py`, `typewriter.py`. Each controls how a single lyric line animates over its duration.
+- `scroll.py` — `ScrollingAnimation`. Continuous scrolling view; active line centered, adjacent lines visible at decreasing opacity. Smooth eased transitions between lines.
 
 **Data formats:**
 - Lyrics: JSON with `title`, `artist`, `lyrics[]` (each entry has `time` in seconds and `text`). See `input/lyrics/disciples-of-dysfunction.json`.
-- Themes: JSON with 9 properties (colors, fonts, shadows, animation settings). See `themes/durt_nurs.json`.
+- Themes: JSON with properties for colors, fonts, layout, highlighting, and overlay. See `themes/durt_nurs.json` and the README for the full schema.
 
 ## Key Conventions
 

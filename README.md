@@ -65,7 +65,9 @@ lyric-video --lyrics input/lyrics/disciples-of-dysfunction.json \
 | `--background` | No | auto-matched | Path to background video |
 | `--no-background` | No | off | Force solid color background |
 | `--theme` | No | `themes/durt_nurs.json` | Path to theme JSON |
-| `--animation` | No | `fade` | Animation style: `fade`, `slide`, or `typewriter` |
+| `--lyric-position` | No | theme default | Lyric column: `left`, `center`, or `right` (overrides theme) |
+| `--highlight-mode` | No | theme default | Active line style: `line`, `word`, or `character` (overrides theme) |
+| `--text-overlay` | No | theme default | Overlay strip opacity behind lyrics, 0–100 (overrides theme) |
 | `--output` | No | `output/<title>.mp4` | Output file path |
 | `--fps` | No | `30` | Frame rate |
 | `--preview` | No | off | Generate only first 30 seconds |
@@ -91,6 +93,10 @@ lyric-video --lyrics my_lyrics.json --audio my_song.wav \
 
 # Override background for a song
 lyric-video --song disciples-of-dysfunction --background /path/to/custom_bg.mp4
+
+# Override style flags (all override the active theme)
+lyric-video --song disciples-of-dysfunction --lyric-position left --highlight-mode word
+lyric-video --song disciples-of-dysfunction --text-overlay 60 --no-background
 ```
 
 You can also run the CLI directly without installing the package:
@@ -125,11 +131,15 @@ python -m src.cli.main --song disciples-of-dysfunction
 
 See `input/lyrics/disciples-of-dysfunction.json` for a complete example.
 
-## Animations
+## Animation
 
-- **fade** — text fades in over ~0.3s, holds, then fades out (default)
-- **slide** — text slides up from below into center, holds, then slides out upward
-- **typewriter** — characters appear one at a time, evenly spaced across the line duration
+Lyric lines scroll continuously — the active line is centered on screen and adjacent lines are visible above and below at decreasing opacity (controlled by `inactive_text_opacity_gradient` in the theme). Transitions between lines are smoothly eased.
+
+Active-line highlighting is set via `highlight_mode` in the theme or `--highlight-mode` on the CLI:
+
+- **line** — the entire active line is rendered at full opacity in `active_text_color` (default)
+- **word** — words are highlighted progressively as the line plays
+- **character** — characters are highlighted progressively as the line plays
 
 ## Themes
 
