@@ -254,7 +254,9 @@ Themes are JSON files that control the visual style. The included `themes/defaul
 
 ## Publishing a Release
 
-Releases are built automatically via GitHub Actions when a version tag is pushed:
+Releases are built automatically via GitHub Actions when a version tag is pushed.
+
+First, bump `version` in `pyproject.toml` (the single source of truth for the app version), add a `CHANGELOG.md` entry, and commit. The workflow fails if the tag doesn't match the `pyproject.toml` version. Then tag and push:
 
 ```bash
 git tag v1.0.0

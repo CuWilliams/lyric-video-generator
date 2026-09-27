@@ -4,6 +4,14 @@ All notable changes to LV-Gen are documented here.
 
 ---
 
+## [Unreleased]
+
+### Changed
+- Build configs (`build.spec`, `setup_py2app.py`) now read the version directly from `pyproject.toml` via `tomllib` instead of installed package metadata, which could go stale and stamp local builds with an old version
+- Release workflow now fails if the pushed tag doesn't match the `pyproject.toml` version
+
+---
+
 ## [0.1.2] — 2026-03-26
 
 ### Added

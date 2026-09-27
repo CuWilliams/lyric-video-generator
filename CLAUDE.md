@@ -76,6 +76,7 @@ The release workflow (`build-release.yml`) runs the pandoc build automatically o
 
 ## Key Conventions
 
+- App version lives only in `pyproject.toml`. `build.spec` and `setup_py2app.py` read it from there via `tomllib`; don't hardcode it elsewhere. The release workflow fails if the pushed tag (minus `v`) doesn't match it, so bump `pyproject.toml` before tagging.
 - moviepy v2.0+ API: use `with_fps()`, `with_audio()`, `VideoClip(frame_function)` — not the deprecated v1 methods.
 - Python 3.10+ required. Dependencies: moviepy, Pillow, click, numpy, PyQt6.
 - Preview mode renders first 30 seconds only.
