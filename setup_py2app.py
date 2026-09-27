@@ -7,12 +7,15 @@ Usage:
 
 Output: dist/LV-Gen.app
 """
-from importlib.metadata import version as _pkg_version
+import tomllib
 from setuptools import setup
 
-# Read version from pyproject.toml via installed package metadata.
-# Run `pip install -e .` once before building to register the package.
-_VERSION = _pkg_version("lyric-video-generator")
+# Read version straight from pyproject.toml (the single source of truth).
+# Installed package metadata goes stale until `pip install -e .` is re-run,
+# which previously produced bundles with the wrong version. The release
+# workflow checks that this value matches the pushed git tag.
+with open("pyproject.toml", "rb") as _f:
+    _VERSION = tomllib.load(_f)["project"]["version"]
 
 # py2app 0.28 raises an error if install_requires is set on the distribution,
 # but setuptools auto-populates it from pyproject.toml. Clear it before py2app

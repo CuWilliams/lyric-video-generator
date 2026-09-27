@@ -11,15 +11,18 @@
 #   - Run from the repo root with your venv active
 
 import sys
-from importlib.metadata import version as _pkg_version
+import tomllib
 from pathlib import Path
 from PyInstaller.utils.hooks import copy_metadata
 
 block_cipher = None
 
-# Read version from pyproject.toml via installed package metadata.
-# Run `pip install -e .` once before building to register the package.
-_VERSION = _pkg_version("lyric-video-generator")
+# Read version straight from pyproject.toml (the single source of truth).
+# Installed package metadata goes stale until `pip install -e .` is re-run,
+# which previously produced bundles with the wrong version. The release
+# workflow checks that this value matches the pushed git tag.
+with open("pyproject.toml", "rb") as _f:
+    _VERSION = tomllib.load(_f)["project"]["version"]
 
 # Data files to bundle with the app
 datas = [
