@@ -12,10 +12,25 @@ produce a `.dmg` that macOS opens without any Gatekeeper warning.
 - Xcode command-line tools installed locally (`xcode-select --install`)
 - Your **Developer ID Application** certificate in your local Keychain
 
-If you don't have a Developer ID Application certificate yet:
-1. Open **Xcode → Settings → Accounts**
-2. Select your Apple ID → **Manage Certificates**
+If you don't have a Developer ID Application certificate yet, create it from
+the web portal rather than from Xcode — the portal is the only place that lets
+you choose the intermediate certificate authority:
+
+1. In Keychain Access, choose **Certificate Assistant → Request a Certificate
+   From a Certificate Authority**, select **Saved to disk**, and save the CSR
+2. Go to [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/certificates/list)
 3. Click **+** → **Developer ID Application**
+4. When prompted for the intermediate, choose **G2 Sub-CA**. The original
+   Sub-CA expires on February 1, 2027, and so does anything it issues
+5. Upload the CSR, download the `.cer`, and double-click to install it
+
+Confirm you got the right authority — the issuer must read `OU=G2`:
+
+```bash
+security find-certificate -a -c "Developer ID Application" -p \
+  | openssl storeutl -noout -text /dev/stdin \
+  | grep -E "Issuer:|Not After"
+```
 
 ---
 
@@ -33,7 +48,10 @@ A base64-encoded `.p12` export of your Developer ID Application certificate.
 **Steps:**
 
 1. Open **Keychain Access** on your Mac
-2. Under **My Certificates**, find **Developer ID Application: Your Name (TEAMID)**
+2. Under **My Certificates**, find **Developer ID Application: Your Name (TEAMID)**.
+   During a rollover two certificates share this name — expand each and export
+   the one whose issuer is `Developer ID Certification Authority` with `OU=G2`,
+   not the one expiring February 1, 2027
 3. Right-click it → **Export**
 4. Save as `certificate.p12`, set a strong password (you'll need it for `APPLE_CERT_PASSWORD`)
 5. Base64-encode it — the `tr -d '\n'` strips line breaks so the value is a single unbroken string:

@@ -7,13 +7,33 @@
 # Requires:
 #   - venv active (source venv/bin/activate)
 #   - Developer ID Application certificate in Keychain
-#   - SIGN_CERT env var set to your Developer ID certificate hash
-#     e.g. export SIGN_CERT="$(security find-identity -v -p codesigning | grep 'Developer ID' | awk '{print $2}')"
+#   - SIGN_CERT env var set to the SHA-1 hash of that certificate.
+#     List the candidates:
+#       security find-identity -v -p codesigning | grep 'Developer ID Application'
+#     then pin the one you want, e.g.:
+#       export SIGN_CERT=840DD6427C5D50491AC2244E0B79DA67A0264163
+#     Pin the hash rather than deriving it. Across a certificate rollover the
+#     Keychain holds both the old and the new cert under the same common name,
+#     so anything that greps by name is ambiguous.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CERT="${SIGN_CERT:?Error: SIGN_CERT env var not set. Export your Developer ID certificate hash before running.}"
+
+# A rollover leaves two identities sharing one common name, so the hash has to
+# name exactly one of them -- codesign gives a cryptic error otherwise.
+if ! [[ "$CERT" =~ ^[0-9A-Fa-f]{40}$ ]]; then
+  echo "Error: SIGN_CERT must be a single 40-character SHA-1 hash, got: $CERT" >&2
+  echo "Candidates:" >&2
+  security find-identity -v -p codesigning | grep 'Developer ID Application' >&2
+  exit 1
+fi
+if ! security find-identity -v -p codesigning | grep -qi "$CERT"; then
+  echo "Error: no codesigning identity in the Keychain matches $CERT" >&2
+  exit 1
+fi
+
 ENT="$REPO_ROOT/entitlements.plist"
 DIST="$REPO_ROOT/dist/LV-Gen.app"
 INSTALL="/Applications/LV-Gen.app"
@@ -64,26 +84,37 @@ fi
 
 echo "=== 3. Sign all binaries ==="
 
+# Sign one file, aborting the build if codesign rejects it. A silent failure
+# here produces a bundle that looks signed but fails notarization later.
+sign() {
+  codesign --force --sign "$CERT" --options runtime --entitlements "$ENT" "$1"
+}
+
+# -print0 / read -d '' so paths with spaces survive, and process substitution
+# so the loop runs in this shell and `set -e` can actually abort the build.
+
 # Sign dylibs (including _dylibs)
-find "$DIST" -name "*.dylib" \
-  -exec codesign --force --sign "$CERT" --options runtime --entitlements "$ENT" {} \; 2>/dev/null
+while IFS= read -r -d '' f; do
+  sign "$f"
+done < <(find "$DIST" -name "*.dylib" -print0)
 echo "  Dylibs signed"
 
 # Sign .so extension modules
-find "$DIST" -name "*.so" \
-  -exec codesign --force --sign "$CERT" --options runtime --entitlements "$ENT" {} \; 2>/dev/null
+while IFS= read -r -d '' f; do
+  sign "$f"
+done < <(find "$DIST" -name "*.so" -print0)
 echo "  .so files signed"
 
 # Sign extension-less Mach-O files in Frameworks (Qt dylibs without .dylib extension)
-find "$DIST/Contents/Frameworks" -maxdepth 1 -type f | while read f; do
+while IFS= read -r -d '' f; do
   if file "$f" 2>/dev/null | grep -q "Mach-O"; then
-    codesign --force --sign "$CERT" --options runtime --entitlements "$ENT" "$f" 2>/dev/null
+    sign "$f"
   fi
-done
+done < <(find "$DIST/Contents/Frameworks" -maxdepth 1 -type f -print0)
 echo "  Extension-less Mach-O files signed"
 
 echo "=== 4. Sign bundle ==="
-codesign --force --sign "$CERT" --options runtime --entitlements "$ENT" "$DIST"
+sign "$DIST"
 echo "  Bundle signed"
 
 # Verify

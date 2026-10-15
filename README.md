@@ -270,13 +270,18 @@ To build locally instead:
 ```bash
 source venv/bin/activate
 pip install py2app
+
+# Pin the signing certificate by hash. List your candidates with:
+#   security find-identity -v -p codesigning | grep 'Developer ID Application'
+export SIGN_CERT=<40-char-sha1-of-your-developer-id-cert>
+
 bash scripts/build_and_sign.sh
 # Output: /Applications/LV-Gen.app (built, signed, and installed)
 ```
 
 `build_and_sign.sh` handles the full pipeline: py2app bundle, post-processing, code signing with your Developer ID, and installation to `/Applications/`. Run it for every local build.
 
-> `assets/icon.icns` must exist before building. Your Developer ID Application certificate must be in Keychain. See [entitlements.plist](entitlements.plist) and [setup_py2app.py](setup_py2app.py) for details.
+> `assets/icon.icns` must exist before building. Your Developer ID Application certificate must be in Keychain, and `SIGN_CERT` must name it by hash — grepping by name is ambiguous while an old and a new certificate coexist. See [docs/signing.md](docs/signing.md), [entitlements.plist](entitlements.plist) and [setup_py2app.py](setup_py2app.py) for details.
 
 ## Project Structure
 
