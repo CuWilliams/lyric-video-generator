@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://durtnurs.com/lv-gen/"
+"Homepage" = "https://github.com/CuWilliams/lyric-video-generator"
 "Repository" = "https://github.com/CuWilliams/lyric-video-generator"
 "Releases" = "https://github.com/CuWilliams/lyric-video-generator/releases"
 

@@ -42,7 +42,7 @@ OPTIONS = {
     "plist": {
         "CFBundleName": "LV-Gen",
         "CFBundleDisplayName": "LV-Gen",
-        "CFBundleIdentifier": "com.durtnurs.lv-gen",
+        "CFBundleIdentifier": "com.cuwilliams.lv-gen",
         "CFBundleVersion": _VERSION,
         "CFBundleShortVersionString": _VERSION,
         "NSHighResolutionCapable": True,

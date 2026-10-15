@@ -107,7 +107,7 @@ app = BUNDLE(
     coll,
     name="LV-Gen.app",
     icon="assets/icon.icns",    # Place your icon here before building
-    bundle_identifier="com.durtnurs.lv-gen",
+    bundle_identifier="com.cuwilliams.lv-gen",
     info_plist={
         "NSHighResolutionCapable": True,
         "NSRequiresAquaSystemAppearance": False,  # Allows dark mode
