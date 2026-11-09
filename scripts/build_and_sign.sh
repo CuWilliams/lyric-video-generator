@@ -11,7 +11,7 @@
 #     List the candidates:
 #       security find-identity -v -p codesigning | grep 'Developer ID Application'
 #     then pin the one you want, e.g.:
-#       export SIGN_CERT=840DD6427C5D50491AC2244E0B79DA67A0264163
+#       export SIGN_CERT=0123456789ABCDEF0123456789ABCDEF01234567
 #     Pin the hash rather than deriving it. Across a certificate rollover the
 #     Keychain holds both the old and the new cert under the same common name,
 #     so anything that greps by name is ambiguous.
